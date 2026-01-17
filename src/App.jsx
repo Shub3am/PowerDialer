@@ -17,29 +17,79 @@ function App() {
 
     const STORAGE_KEY = 'salesforce_data'
 
+    const isIdField = (key) => {
+        const k = key.toLowerCase();
+        // Ignore fields that are strictly IDs, URLs, or internal sync metadata
+        return k === 'id' ||
+            k === 'url' ||
+            k === 'foundin' ||
+            k === 'lastsync' ||
+            k.endsWith('id') ||
+            k.includes(' id ');
+    };
+
     // Memoized related data (items found in multiple categories)
     const relatedData = useMemo(() => {
-        const matchMap = new Map();
+        const valueMap = new Map(); // value.toLowerCase() -> Set of categories
 
-        // Loop through all standard categories
-        ['Leads', 'Contacts', 'Accounts', 'Opportunities', 'Tasks'].forEach(type => {
+        const categories = ['Leads', 'Contacts', 'Accounts', 'Opportunities', 'Tasks'];
+
+        // 1. Index all values from all categories
+        categories.forEach(type => {
             const records = recordsByType[type] || [];
             records.forEach(record => {
-                const key = record.Id || record.name;
-                if (!key) return;
+                Object.entries(record).forEach(([key, val]) => {
+                    if (isIdField(key)) return;
+                    if (!val || typeof val !== 'string') return;
 
-                if (!matchMap.has(key)) {
-                    matchMap.set(key, { ...record, foundIn: [type] });
-                } else {
-                    const existing = matchMap.get(key);
-                    if (!existing.foundIn.includes(type)) {
-                        existing.foundIn.push(type);
+                    const cleanVal = val.trim().toLowerCase();
+                    if (cleanVal.length < 3) return; // Skip very short values
+
+                    if (!valueMap.has(cleanVal)) {
+                        valueMap.set(cleanVal, new Set());
                     }
+                    valueMap.get(cleanVal).add(type);
+                });
+            });
+        });
+
+        // 2. Find records that contain a value appearing in more than one category
+        const relatedResults = [];
+        const seenRecords = new Set();
+
+        categories.forEach(type => {
+            const records = recordsByType[type] || [];
+            records.forEach(record => {
+                const recKey = record.Id || record.id || JSON.stringify(record);
+                if (seenRecords.has(recKey)) return;
+
+                const foundIn = new Set([type]);
+                let hasCrossMatch = false;
+
+                Object.entries(record).forEach(([key, val]) => {
+                    if (isIdField(key)) return;
+                    if (!val || typeof val !== 'string') return;
+
+                    const cleanVal = val.trim().toLowerCase();
+                    const matchedCats = valueMap.get(cleanVal);
+
+                    if (matchedCats && matchedCats.size > 1) {
+                        hasCrossMatch = true;
+                        matchedCats.forEach(cat => foundIn.add(cat));
+                    }
+                });
+
+                if (hasCrossMatch) {
+                    relatedResults.push({
+                        ...record,
+                        foundIn: Array.from(foundIn).sort()
+                    });
+                    seenRecords.add(recKey);
                 }
             });
         });
 
-        return Array.from(matchMap.values()).filter(item => item.foundIn.length > 1);
+        return relatedResults;
     }, [recordsByType]);
 
     // Get current data based on active tab
@@ -102,6 +152,7 @@ function App() {
                 accounts: dataByType['Accounts'] || [],
                 opportunities: dataByType['Opportunities'] || [],
                 tasks: dataByType['Tasks'] || [],
+                baseURL: dataByType['baseURL'] || '',
                 lastSync: Date.now()
             };
             await storage.set({ [STORAGE_KEY]: payload });
@@ -125,13 +176,24 @@ function App() {
                     Contacts: payload.contacts || [],
                     Accounts: payload.accounts || [],
                     Opportunities: payload.opportunities || [],
-                    Tasks: payload.tasks || []
+                    Tasks: payload.tasks || [],
+                    baseURL: payload.baseURL || ''
                 });
 
                 if (payload.lastSync) {
                     setLastUpdated(new Date(payload.lastSync).toLocaleTimeString());
                 }
                 console.log('✅ Data loaded from storage');
+
+                // If baseURL is missing from storage, try to detect it now
+                if (!payload.baseURL) {
+                    try {
+                        const detectedURL = await getSalesforceBaseURL();
+                        setRecordsByType(prev => ({ ...prev, baseURL: detectedURL }));
+                    } catch (e) {
+                        console.log('Could not auto-detect Salesforce URL on mount');
+                    }
+                }
             } catch (e) {
                 console.error('Failed to load saved data:', e);
             }
@@ -235,7 +297,7 @@ function App() {
                 }
             }
 
-            const combined = { ...recordsByType, ...results };
+            const combined = { ...recordsByType, ...results, baseURL };
             setRecordsByType(combined);
 
             if (autoSave) {
@@ -316,8 +378,8 @@ function App() {
             <header className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 shadow-lg">
                 <div className="flex items-center justify-between gap-4 flex-wrap">
                     <div>
-                        <h1 className="text-2xl font-bold">Salesforce Extractor</h1>
-                        <p className="text-sm text-blue-100">Extract CRM data - Leads, Contacts, Accounts, Opportunities, Tasks</p>
+                        <h1 className="text-2xl font-bold">Shubham's Extractor</h1>
+                        <p className="text-sm text-blue-100">Your Salesforce Companion</p>
                     </div>
                     <div className="flex items-center gap-3 flex-wrap">
                         <label className="flex items-center gap-2 text-sm text-blue-50">
@@ -472,43 +534,117 @@ function App() {
                             </div>
                         </div>
                     ) : (
-                        <div className="overflow-auto h-full">
-                            <table className="w-full text-sm">
-                                <thead className="bg-gray-50 border-b sticky top-0">
-                                    <tr>
-                                        {columns.map(col => (
-                                            <th key={col} className="px-4 py-2 text-left font-semibold text-gray-700">
-                                                {col === 'name' ? 'Name' : col.replace(/field/i, 'Field ')}
-                                            </th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {currentData.map((record, index) => (
-                                        <tr key={record.Id || record.id || index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50 hover:bg-blue-50/30 transition shadow-sm'}>
-                                            {columns.map(col => (
-                                                <td key={col} className={`px-4 py-2 border-b ${col === 'name' ? 'font-medium text-blue-900' : ''}`}>
-                                                    {col === 'foundIn' ? (
-                                                        <div className="flex gap-1 flex-wrap">
-                                                            {record[col].map(type => (
-                                                                <span key={type} className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[10px] uppercase font-bold tracking-wider">
-                                                                    {type}
+                        <div className="overflow-auto h-full p-4 space-y-6">
+                            {currentData.map((record, index) => {
+                                const recordKeys = Object.keys(record).filter(k => !isIdField(k));
+                                // Move name-like fields to the top
+                                recordKeys.sort((a, b) => {
+                                    const aLow = a.toLowerCase();
+                                    const bLow = b.toLowerCase();
+                                    if (aLow.includes('name')) return -1;
+                                    if (bLow.includes('name')) return 1;
+                                    return 0;
+                                });
+
+                                return (
+                                    <div key={record.Id || record.id || index} className="bg-white border-2 border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition">
+                                        <div className="bg-gray-50 px-4 py-2 border-b flex justify-between items-center">
+                                            <span className="font-bold text-blue-700 uppercase text-xs tracking-wider">
+                                                Record #{index + 1}
+                                            </span>
+                                            {record.foundIn && (
+                                                <div className="flex gap-1">
+                                                    {record.foundIn.map(type => (
+                                                        <span key={type} className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[10px] font-black uppercase">
+                                                            {type}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <table className="w-full text-sm">
+                                            <tbody>
+                                                {recordKeys.map(key => (
+                                                    <tr key={key} className="border-b last:border-0 hover:bg-gray-50/50 transition">
+                                                        <td className="w-1/3 px-4 py-2 bg-gray-50/30 font-semibold text-gray-600 border-r">
+                                                            {key}
+                                                        </td>
+                                                        <td className="px-4 py-2 text-gray-800 break-all">
+                                                            {Array.isArray(record[key]) ? record[key].join(', ') : (record[key] || '-')}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                {record.Url && (
+                                                    <tr className="border-t-2 border-gray-100">
+                                                        <td className="px-4 py-2" colSpan="2">
+                                                            {recordsByType.baseURL ? (
+                                                                <a
+                                                                    href={recordsByType.baseURL + record.Url}
+                                                                    target="_blank"
+                                                                    rel="noreferrer"
+                                                                    className="text-blue-600 hover:underline text-xs flex items-center gap-1 font-medium"
+                                                                >
+                                                                    View in Salesforce
+                                                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                                    </svg>
+                                                                </a>
+                                                            ) : (
+                                                                <span className="text-gray-400 text-[10px] italic">
+                                                                    Base URL not detected. Please open Salesforce to enable links.
                                                                 </span>
-                                                            ))}
-                                                        </div>
-                                                    ) : (
-                                                        record[col] || '-'
-                                                    )}
-                                                </td>
-                                            ))}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
                 </div>
             </main>
+
+            {/* Footer */}
+            <footer className="bg-white border-t border-gray-200 p-3">
+                <div className="flex justify-center items-center gap-6">
+                    <a
+                        href="https://vshubham.com"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs font-semibold text-gray-500 hover:text-blue-600 transition flex items-center gap-1.5"
+                    >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                        </svg>
+                        Portfolio
+                    </a>
+                    <a
+                        href="https://linkedin.com/in/shubhamvs"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs font-semibold text-gray-500 hover:text-blue-700 transition flex items-center gap-1.5"
+                    >
+                        <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                            <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
+                        </svg>
+                        LinkedIn
+                    </a>
+                    <a
+                        href="https://github.com/Shub3am"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs font-semibold text-gray-500 hover:text-gray-900 transition flex items-center gap-1.5"
+                    >
+                        <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                        </svg>
+                        GitHub
+                    </a>
+                </div>
+            </footer>
         </div>
     )
 }
