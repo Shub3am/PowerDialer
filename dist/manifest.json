@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Salesforce Power Dialer",
+  "version": "1.0.0",
+  "description": "Extract CRM data from Salesforce - Leads, Contacts, Accounts, Opportunities, Tasks",
+  "action": {
+    "default_popup": "index.html"
+  },
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "tabs",
+    "storage"
+  ],
+  "host_permissions": [
+    "*://*.salesforce.com/*",
+    "*://*.lightning.force.com/*"
+  ]
+}
