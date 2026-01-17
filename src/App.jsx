@@ -1,0 +1,461 @@
+import { useState, useMemo, useEffect } from 'react'
+import './index.css'
+import { getSalesforceBaseURL, extractFromPage } from './services/baseService';
+
+const OBJECTS = ['Leads', 'Contacts', 'Accounts', 'Opportunities', 'Tasks']
+
+function App() {
+    const [activeTab, setActiveTab] = useState('Opportunities')
+    const [recordsByType, setRecordsByType] = useState({})
+    const [loading, setLoading] = useState(false)
+    const [progress, setProgress] = useState(null)
+    const [lastUpdated, setLastUpdated] = useState(null)
+    const [error, setError] = useState(null)
+    const [extractionStatus, setExtractionStatus] = useState({})
+    const [autoSave, setAutoSave] = useState(true)
+
+    const STORAGE_KEY = 'salesforce_data'
+
+    // Get current data based on active tab
+    const currentData = recordsByType[activeTab] || [];
+
+    // Dynamic columns based on extracted data (id hidden; name first)
+    const columns = useMemo(() => {
+        if (!currentData || currentData.length === 0) return [];
+
+        const keys = [];
+        currentData.forEach(rec => {
+            Object.keys(rec).forEach(k => {
+                if (k === 'id') return;
+                if (!keys.includes(k)) keys.push(k);
+            });
+        });
+
+        // Ensure name is first if present
+        const nameIndex = keys.indexOf('name');
+        if (nameIndex > 0) {
+            keys.splice(nameIndex, 1);
+            keys.unshift('name');
+        }
+
+        return keys;
+    }, [currentData]);
+
+    const mapForStorage = (objectType, records) => {
+        const safe = records || [];
+        switch (objectType) {
+            case 'Leads':
+                return safe.map(r => ({
+                    id: r.id,
+                    name: r.name,
+                    company: r.field1 || r.company || '',
+                    email: r.field2 || r.email || '',
+                    status: r.field3 || r.status || '',
+                    owner: r.field4 || r.owner || ''
+                }));
+            case 'Contacts':
+                return safe.map(r => ({
+                    id: r.id,
+                    name: r.name,
+                    email: r.field1 || r.email || '',
+                    phone: r.field2 || r.phone || '',
+                    account: r.field3 || r.account || '',
+                    owner: r.field4 || r.owner || ''
+                }));
+            case 'Accounts':
+                return safe.map(r => ({
+                    id: r.id,
+                    name: r.name,
+                    industry: r.field1 || r.industry || '',
+                    revenue: r.field2 || r.revenue || '',
+                    owner: r.field3 || r.owner || ''
+                }));
+            case 'Opportunities':
+                return safe.map(r => ({
+                    id: r.id,
+                    name: r.name,
+                    amount: r.field1 || r.amount || '',
+                    stage: r.field2 || r.stage || '',
+                    probability: r.field3 || r.probability || '',
+                    closeDate: r.field4 || r.closeDate || '',
+                    account: r.field5 || r.account || ''
+                }));
+            case 'Tasks':
+                return safe.map(r => ({
+                    id: r.id,
+                    subject: r.name || r.subject || '',
+                    due: r.field1 || r.due || '',
+                    status: r.field2 || r.status || '',
+                    relatedTo: r.field3 || r.relatedTo || '',
+                    assignee: r.field4 || r.assignee || ''
+                }));
+            default:
+                return safe;
+        }
+    };
+
+    const persistToStorage = async (dataByType) => {
+        try {
+            const storage = chrome?.storage?.sync || chrome?.storage?.local;
+            if (!storage) {
+                console.warn('Extension storage not available; skipping persist');
+                return;
+            }
+            const payload = {
+                leads: mapForStorage('Leads', dataByType['Leads']),
+                contacts: mapForStorage('Contacts', dataByType['Contacts']),
+                accounts: mapForStorage('Accounts', dataByType['Accounts']),
+                opportunities: mapForStorage('Opportunities', dataByType['Opportunities']),
+                tasks: mapForStorage('Tasks', dataByType['Tasks']),
+                lastSync: Date.now()
+            };
+            await storage.set({ [STORAGE_KEY]: payload });
+        } catch (e) {
+            console.error('Failed to persist data to extension storage', e);
+        }
+    };
+
+    useEffect(() => {
+        const loadFromStorage = async () => {
+            try {
+                const storage = chrome?.storage?.sync || chrome?.storage?.local;
+                if (!storage) {
+                    console.warn('Extension storage not available; skipping load');
+                    return;
+                }
+                const stored = await storage.get(STORAGE_KEY);
+                const payload = stored?.[STORAGE_KEY]?.salesforce_data || stored?.[STORAGE_KEY];
+                if (!payload) return;
+
+                setRecordsByType({
+                    Leads: payload.leads || [],
+                    Contacts: payload.contacts || [],
+                    Accounts: payload.accounts || [],
+                    Opportunities: payload.opportunities || [],
+                    Tasks: payload.tasks || []
+                });
+
+                if (payload.lastSync) {
+                    setLastUpdated(new Date(payload.lastSync).toLocaleTimeString());
+                }
+            } catch (e) {
+                console.error('Failed to load saved data from chrome.storage.local', e);
+            }
+        };
+
+        loadFromStorage();
+    }, []);
+
+    const handleManualSave = async () => {
+        await persistToStorage(recordsByType);
+        setLastUpdated(new Date().toLocaleTimeString());
+    };
+
+    // Handler: Extract ALL data from all CRM objects
+    const handleExtractData = async () => {
+        console.log('🚀 Extract All Data button clicked');
+        setLoading(true);
+        setError(null);
+        setProgress(null);
+        setExtractionStatus({});
+
+        const objectURLs = {
+            'Leads': '/lightning/o/Lead/list?filterName=AllOpenLeads',
+            'Contacts': '/lightning/o/Contact/list?filterName=allContacts',
+            'Accounts': '/lightning/o/Account/list?filterName=AllAccounts',
+            'Opportunities': '/lightning/o/Opportunity/list?filterName=allOpportunities',
+            'Tasks': '/lightning/o/Task/list'
+        };
+
+        const results = {};
+
+        try {
+            // Validate we're on Salesforce
+            const baseURL = await getSalesforceBaseURL();
+
+            // Extract all objects sequentially with progress updates
+            for (const [objectType, path] of Object.entries(objectURLs)) {
+                setExtractionStatus(prev => ({
+                    ...prev,
+                    [objectType]: 'extracting'
+                }));
+
+                setProgress({
+                    currentObject: objectType,
+                    completed: Object.keys(results).length,
+                    total: OBJECTS.length
+                });
+
+                try {
+                    console.log(`📞 Extracting ${objectType}...`);
+
+                    // Open tab for this object type
+                    const tab = await chrome.tabs.create({
+                        url: baseURL + path,
+                        active: false
+                    });
+
+                    // Wait for page to load
+                    await new Promise(resolve => {
+                        chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
+                            if (tabId === tab.id && info.status === 'complete') {
+                                chrome.tabs.onUpdated.removeListener(listener);
+                                setTimeout(resolve, 2000);
+                            }
+                        });
+                    });
+
+                    // Extract data
+                    const data = await extractFromPage(tab.id, objectType);
+
+                    // Close the tab
+                    await chrome.tabs.remove(tab.id);
+
+                    results[objectType] = data || [];
+                    setExtractionStatus(prev => ({
+                        ...prev,
+                        [objectType]: 'success'
+                    }));
+
+                    // Update UI immediately after each object is extracted
+                    setRecordsByType(prev => ({
+                        ...prev,
+                        [objectType]: data || []
+                    }));
+
+                } catch (err) {
+                    console.error(`❌ Error extracting ${objectType}:`, err);
+                    setExtractionStatus(prev => ({
+                        ...prev,
+                        [objectType]: 'error'
+                    }));
+                    results[objectType] = [];
+
+                    // Show error message to user
+                    if (err.message && err.message.includes('Salesforce page')) {
+                        setError(err.message);
+                        setLoading(false);
+                        setProgress(null);
+                        return;
+                    }
+                }
+            }
+
+            const combined = { ...recordsByType, ...results };
+            setRecordsByType(combined);
+
+            if (autoSave) {
+                await persistToStorage(combined);
+            }
+
+            setLastUpdated(new Date().toLocaleTimeString());
+            console.log('✅ All extractions completed!');
+
+        } catch (err) {
+            console.error('❌ Extraction error:', err);
+            setError(err.message || 'Failed to extract data');
+        } finally {
+            setLoading(false);
+            setProgress(null);
+        }
+    };
+
+    // Handler: Export to CSV
+    const handleExportCSV = () => {
+        if (currentData.length === 0) return;
+
+        // Generate CSV from current data
+        const headers = columns.join(',');
+        const rows = currentData.map(record =>
+            columns.map(col => {
+                const value = record[col] || '';
+                // Escape values containing commas or quotes
+                if (value.includes(',') || value.includes('"')) {
+                    return `"${value.replace(/"/g, '""')}"`;
+                }
+                return value;
+            }).join(',')
+        );
+
+        const csv = [headers, ...rows].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `salesforce-${activeTab.toLowerCase()}-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    // Handler: Clear all data
+    const handleClearAll = () => {
+        if (confirm('Are you sure you want to clear all extracted data?')) {
+            setRecordsByType({});
+            setLastUpdated(null);
+            setError(null);
+        }
+    };
+
+    return (
+        <div className="w-full h-full bg-gray-50 flex flex-col">
+            {/* Header */}
+            <header className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 shadow-lg">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                    <div>
+                        <h1 className="text-2xl font-bold">Salesforce Extractor</h1>
+                        <p className="text-sm text-blue-100">Extract CRM data - Leads, Contacts, Accounts, Opportunities, Tasks</p>
+                    </div>
+                    <div className="flex items-center gap-3 flex-wrap">
+                        <label className="flex items-center gap-2 text-sm text-blue-50">
+                            <input
+                                type="checkbox"
+                                className="h-4 w-4"
+                                checked={autoSave}
+                                onChange={(e) => setAutoSave(e.target.checked)}
+                            />
+                            Auto-save
+                        </label>
+                        <button
+                            onClick={handleManualSave}
+                            disabled={Object.keys(recordsByType).length === 0}
+                            className="px-4 py-2 text-sm border border-green-200 text-green-50 font-semibold rounded-lg bg-white/10 hover:bg-white/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Save
+                        </button>
+                        <button
+                            onClick={handleExtractData}
+                            disabled={loading}
+                            className="px-6 py-2 bg-white text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {loading ? 'Extracting...' : 'Extract Data'}
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            {/* Tabs */}
+            <div className="bg-white border-b border-gray-200">
+                <div className="flex">
+                    {OBJECTS.map(obj => (
+                        <button
+                            key={obj}
+                            onClick={() => setActiveTab(obj)}
+                            className={`px-6 py-3 font-medium transition ${activeTab === obj
+                                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                                : 'text-gray-600 hover:text-gray-900'
+                                }`}
+                        >
+                            {obj}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Stats */}
+            <div className="bg-white border-b border-gray-200 px-6 py-3 flex justify-between items-center">
+                <div className="flex gap-6">
+                    <div><span className="text-gray-600">Total: </span><span className="font-bold">{currentData.length}</span></div>
+                    <div><span className="text-gray-600">Updated: </span><span className="font-bold">{lastUpdated || 'Never'}</span></div>
+                </div>
+                <div className="flex gap-3 items-center">
+                    <button
+                        onClick={handleExportCSV}
+                        disabled={currentData.length === 0}
+                        className="px-4 py-1.5 text-sm border border-blue-600 text-blue-600 rounded hover:bg-blue-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Export CSV
+                    </button>
+                    <button
+                        onClick={handleClearAll}
+                        disabled={currentData.length === 0}
+                        className="px-4 py-1.5 text-sm border border-red-600 text-red-600 rounded hover:bg-red-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Clear All
+                    </button>
+                </div>
+            </div>
+
+            {/* Content */}
+            <main className="flex-1 overflow-auto p-4">
+                {loading && progress && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                        <div className="flex items-center justify-between mb-3">
+                            <div>
+                                <p className="font-semibold text-blue-900">Extracting All Data...</p>
+                                <p className="text-sm text-blue-700">Currently processing: {progress.currentObject}</p>
+                                <p className="text-xs text-blue-600 mt-1">Progress: {progress.completed} of {progress.total} completed</p>
+                            </div>
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                        </div>
+
+                        {/* Progress for each object type */}
+                        <div className="grid grid-cols-5 gap-2 mt-3">
+                            {OBJECTS.map(obj => (
+                                <div
+                                    key={obj}
+                                    className={`text-center py-2 px-1 rounded text-xs font-medium ${extractionStatus[obj] === 'success' ? 'bg-green-100 text-green-700' :
+                                        extractionStatus[obj] === 'extracting' ? 'bg-blue-100 text-blue-700 animate-pulse' :
+                                            extractionStatus[obj] === 'error' ? 'bg-red-100 text-red-700' :
+                                                'bg-gray-100 text-gray-500'
+                                        }`}
+                                >
+                                    {obj}
+                                    {extractionStatus[obj] === 'success' && ' ✓'}
+                                    {extractionStatus[obj] === 'extracting' && ' ⏳'}
+                                    {extractionStatus[obj] === 'error' && ' ✗'}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {error && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                        <p className="font-semibold text-red-900">Error</p>
+                        <p className="text-sm text-red-700">{error}</p>
+                    </div>
+                )}
+
+                <div className="bg-white rounded-lg shadow border border-gray-200 h-full">
+                    {currentData.length === 0 && !loading ? (
+                        <div className="flex items-center justify-center h-full">
+                            <div className="text-center text-gray-400">
+                                <p className="text-lg font-semibold">No data extracted yet</p>
+                                <p className="text-sm mt-1">Click "Extract Data" to start collecting {activeTab}</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="overflow-auto h-full">
+                            <table className="w-full text-sm">
+                                <thead className="bg-gray-50 border-b sticky top-0">
+                                    <tr>
+                                        {columns.map(col => (
+                                            <th key={col} className="px-4 py-2 text-left font-semibold text-gray-700">
+                                                {col === 'name' ? 'Name' : col.replace(/field/i, 'Field ')}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {currentData.map((record, index) => (
+                                        <tr key={record.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                            {columns.map(col => (
+                                                <td key={col} className={`px-4 py-2 border-b ${col === 'name' ? 'font-medium' : ''}`}>
+                                                    {record[col] || '-'}
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            </main>
+        </div>
+    )
+}
+
+export default App

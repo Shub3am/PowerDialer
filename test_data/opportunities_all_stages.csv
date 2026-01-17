@@ -1,0 +1,149 @@
+Opportunity Name,Account Name,Amount,Stage,Close Date,Probability
+Alpha Tech - CRM Upgrade,Alpha Tech,150000,Prospecting,2026-03-31,10
+Alpha Tech - License Expansion,Alpha Tech,300000,Qualification,2026-04-20,25
+CloudNova - Custom Sneakers,CloudNova,250000,Proposal/Price Quote,2026-05-10,50
+Zenith Corp - ERP Implementation,Zenith Corp,500000,Negotiation/Review,2026-04-25,75
+BlueSky - IT Support Contract,BlueSky Solutions,200000,Closed Lost,2026-02-01,0
+NextGen - Software License Deal,NextGen Systems,350000,Closed Won,2026-02-15,100
+Alpha Tech - CRM Upgrade Phase 1,Alpha Tech,150000,Prospecting,2026-03-31,10
+Alpha Tech - CRM Upgrade Phase 2,Alpha Tech,200000,Qualification,2026-04-15,25
+Alpha Tech - License Expansion Q2,Alpha Tech,300000,Proposal/Price Quote,2026-05-10,50
+Alpha Tech - Analytics Add-on,Alpha Tech,180000,Negotiation/Review,2026-05-25,75
+Alpha Tech - Support Renewal,Alpha Tech,120000,Closed Won,2026-02-20,100
+
+CloudNova - Custom Sneakers Pilot,CloudNova,100000,Prospecting,2026-03-10,10
+CloudNova - Custom Sneakers Bulk,CloudNova,250000,Qualification,2026-04-05,25
+CloudNova - Employee Kit Rollout,CloudNova,400000,Proposal/Price Quote,2026-05-18,50
+CloudNova - Branding Contract,CloudNova,220000,Negotiation/Review,2026-06-01,75
+CloudNova - Yearly Supply Deal,CloudNova,500000,Closed Won,2026-02-28,100
+
+Zenith Corp - ERP Discovery,Zenith Corp,120000,Prospecting,2026-03-20,10
+Zenith Corp - ERP Phase 1,Zenith Corp,300000,Qualification,2026-04-22,25
+Zenith Corp - ERP Phase 2,Zenith Corp,500000,Proposal/Price Quote,2026-05-30,50
+Zenith Corp - ERP Final Negotiation,Zenith Corp,750000,Negotiation/Review,2026-06-10,75
+Zenith Corp - ERP Implementation,Zenith Corp,900000,Closed Won,2026-02-18,100
+
+BlueSky Solutions - IT Audit,BlueSky Solutions,80000,Prospecting,2026-03-12,10
+BlueSky Solutions - Infrastructure Upgrade,BlueSky Solutions,200000,Qualification,2026-04-08,25
+BlueSky Solutions - Managed Services Proposal,BlueSky Solutions,350000,Proposal/Price Quote,2026-05-12,50
+BlueSky Solutions - SLA Negotiation,BlueSky Solutions,180000,Negotiation/Review,2026-05-22,75
+BlueSky Solutions - IT Support Contract,BlueSky Solutions,200000,Closed Lost,2026-02-01,0
+
+NextGen Systems - Software Demo,NextGen Systems,90000,Prospecting,2026-03-18,10
+NextGen Systems - License Evaluation,NextGen Systems,180000,Qualification,2026-04-02,25
+NextGen Systems - License Proposal,NextGen Systems,350000,Proposal/Price Quote,2026-05-05,50
+NextGen Systems - Legal Review,NextGen Systems,420000,Negotiation/Review,2026-05-28,75
+NextGen Systems - Software License Deal,NextGen Systems,350000,Closed Won,2026-02-15,100
+
+TechOrbit - Process Assessment,TechOrbit,70000,Prospecting,2026-03-14,10
+TechOrbit - Operations Automation,TechOrbit,160000,Qualification,2026-04-18,25
+TechOrbit - Automation Proposal,TechOrbit,280000,Proposal/Price Quote,2026-05-20,50
+TechOrbit - Contract Negotiation,TechOrbit,320000,Negotiation/Review,2026-06-05,75
+TechOrbit - Automation Rollout,TechOrbit,450000,Closed Won,2026-02-25,100
+
+Innova Labs - UX Research Pilot,Innova Labs,60000,Prospecting,2026-03-22,10
+Innova Labs - Design System Build,Innova Labs,140000,Qualification,2026-04-28,25
+Innova Labs - Product Redesign Proposal,Innova Labs,260000,Proposal/Price Quote,2026-05-26,50
+Innova Labs - Final Design Contract,Innova Labs,300000,Negotiation/Review,2026-06-12,75
+Innova Labs - UX Partnership Deal,Innova Labs,380000,Closed Won,2026-02-27,100
+Velocity Inc - Process Audit,Velocity Inc,85000,Prospecting,2026-03-25,10
+Velocity Inc - System Integration,Velocity Inc,175000,Qualification,2026-04-12,25
+Velocity Inc - Integration Proposal,Velocity Inc,295000,Proposal/Price Quote,2026-05-15,50
+Velocity Inc - Contract Finalization,Velocity Inc,340000,Negotiation/Review,2026-06-02,75
+Velocity Inc - Full System Rollout,Velocity Inc,425000,Closed Won,2026-02-22,100
+Quantum Systems - Initial Consultation,Quantum Systems,95000,Prospecting,2026-03-28,10
+Quantum Systems - Requirements Gathering,Quantum Systems,210000,Qualification,2026-04-09,25
+Quantum Systems - Solution Design,Quantum Systems,380000,Proposal/Price Quote,2026-05-22,50
+Quantum Systems - Final Negotiation,Quantum Systems,450000,Negotiation/Review,2026-06-08,75
+Quantum Systems - Implementation Deal,Quantum Systems,520000,Closed Won,2026-02-24,100
+Prism Digital - Discovery Phase,Prism Digital,55000,Prospecting,2026-03-16,10
+Prism Digital - Strategy Development,Prism Digital,125000,Qualification,2026-04-06,25
+Prism Digital - Strategy Proposal,Prism Digital,215000,Proposal/Price Quote,2026-05-08,50
+Prism Digital - Contract Negotiation,Prism Digital,260000,Negotiation/Review,2026-05-25,75
+Prism Digital - Strategy Implementation,Prism Digital,315000,Closed Won,2026-02-19,100
+Summit Corp - Marketing Analysis,Summit Corp,75000,Prospecting,2026-03-19,10
+Summit Corp - Campaign Development,Summit Corp,155000,Qualification,2026-04-11,25
+Summit Corp - Campaign Proposal,Summit Corp,265000,Proposal/Price Quote,2026-05-17,50
+Summit Corp - Budget Approval,Summit Corp,305000,Negotiation/Review,2026-06-03,75
+Summit Corp - Campaign Launch,Summit Corp,375000,Closed Won,2026-02-26,100
+Nexus Global - Research Phase,Nexus Global,65000,Prospecting,2026-03-21,10
+Nexus Global - Analysis Report,Nexus Global,145000,Qualification,2026-04-14,25
+Nexus Global - Strategy Proposal,Nexus Global,245000,Proposal/Price Quote,2026-05-19,50
+Nexus Global - Negotiation Phase,Nexus Global,285000,Negotiation/Review,2026-06-04,75
+Nexus Global - Full Service Deal,Nexus Global,395000,Closed Won,2026-02-28,100
+Vertex Solutions - Consultation,Vertex Solutions,50000,Prospecting,2026-03-11,10
+Vertex Solutions - Assessment,Vertex Solutions,110000,Qualification,2026-04-03,25
+Vertex Solutions - Solution Proposal,Vertex Solutions,190000,Proposal/Price Quote,2026-05-09,50
+Vertex Solutions - Terms Discussion,Vertex Solutions,220000,Negotiation/Review,2026-05-29,75
+Vertex Solutions - Implementation Deal,Vertex Solutions,270000,Closed Won,2026-02-21,100
+Apex Industries - Audit Phase,Apex Industries,72000,Prospecting,2026-03-23,10
+Apex Industries - Gap Analysis,Apex Industries,152000,Qualification,2026-04-16,25
+Apex Industries - Solution Design,Apex Industries,258000,Proposal/Price Quote,2026-05-24,50
+Apex Industries - Negotiation,Apex Industries,298000,Negotiation/Review,2026-06-09,75
+Apex Industries - Full Implementation,Apex Industries,365000,Closed Won,2026-02-23,100
+Horizon Tech - Initial Assessment,Horizon Tech,68000,Prospecting,2026-03-13,10
+Horizon Tech - Technical Review,Horizon Tech,148000,Qualification,2026-04-10,25
+Horizon Tech - Tech Proposal,Horizon Tech,252000,Proposal/Price Quote,2026-05-21,50
+Horizon Tech - Final Review,Horizon Tech,292000,Negotiation/Review,2026-06-07,75
+Horizon Tech - Tech Integration,Horizon Tech,358000,Closed Won,2026-02-25,100
+Catalyst Systems - Planning Session,Catalyst Systems,78000,Prospecting,2026-03-26,10
+Catalyst Systems - Planning Report,Catalyst Systems,168000,Qualification,2026-04-19,25
+Catalyst Systems - Plan Proposal,Catalyst Systems,288000,Proposal/Price Quote,2026-05-27,50
+Catalyst Systems - Plan Negotiation,Catalyst Systems,332000,Negotiation/Review,2026-06-11,75
+Catalyst Systems - Plan Implementation,Catalyst Systems,408000,Closed Won,2026-02-29,100
+Synergy Partners - Partnership Discussion,Synergy Partners,62000,Prospecting,2026-03-15,10
+Synergy Partners - Partnership Assessment,Synergy Partners,132000,Qualification,2026-04-07,25
+Synergy Partners - Partnership Proposal,Synergy Partners,224000,Proposal/Price Quote,2026-05-14,50
+Synergy Partners - Terms Negotiation,Synergy Partners,268000,Negotiation/Review,2026-05-30,75
+Synergy Partners - Partnership Deal,Synergy Partners,328000,Closed Won,2026-02-20,100
+Innovative Minds - Initial Meeting,Innovative Minds,58000,Prospecting,2026-03-17,10
+Innovative Minds - Concept Review,Innovative Minds,124000,Qualification,2026-04-05,25
+Innovative Minds - Concept Proposal,Innovative Minds,212000,Proposal/Price Quote,2026-05-11,50
+Innovative Minds - Concept Negotiation,Innovative Minds,256000,Negotiation/Review,2026-05-27,75
+Innovative Minds - Concept Launch,Innovative Minds,312000,Closed Won,2026-02-18,100
+Dynamic Force - Strategy Session,Dynamic Force,70000,Prospecting,2026-03-19,10
+Dynamic Force - Strategy Analysis,Dynamic Force,150000,Qualification,2026-04-15,25
+Dynamic Force - Strategy Proposal,Dynamic Force,254000,Proposal/Price Quote,2026-05-23,50
+Dynamic Force - Budget Discussion,Dynamic Force,294000,Negotiation/Review,2026-06-06,75
+Dynamic Force - Strategy Execution,Dynamic Force,360000,Closed Won,2026-02-24,100
+Elite Group - Assessment Session,Elite Group,66000,Prospecting,2026-03-20,10
+Elite Group - Assessment Report,Elite Group,142000,Qualification,2026-04-12,25
+Elite Group - Assessment Proposal,Elite Group,242000,Proposal/Price Quote,2026-05-18,50
+Elite Group - Approval Discussion,Elite Group,280000,Negotiation/Review,2026-06-01,75
+Elite Group - Assessment Execution,Elite Group,344000,Closed Won,2026-02-22,100
+Prime Ventures - Venture Consultation,Prime Ventures,88000,Prospecting,2026-03-27,10
+Prime Ventures - Venture Analysis,Prime Ventures,188000,Qualification,2026-04-20,25
+Prime Ventures - Venture Proposal,Prime Ventures,318000,Proposal/Price Quote,2026-05-28,50
+Prime Ventures - Venture Negotiation,Prime Ventures,368000,Negotiation/Review,2026-06-12,75
+Prime Ventures - Venture Investment,Prime Ventures,452000,Closed Won,2026-03-01,100
+CoreLogic - Core Services Analysis,CoreLogic,54000,Prospecting,2026-03-14,10
+CoreLogic - Core Assessment,CoreLogic,116000,Qualification,2026-04-08,25
+CoreLogic - Core Proposal,CoreLogic,198000,Proposal/Price Quote,2026-05-13,50
+CoreLogic - Core Negotiation,CoreLogic,242000,Negotiation/Review,2026-05-28,75
+CoreLogic - Core Services Deal,CoreLogic,296000,Closed Won,2026-02-17,100
+Streamline Corp - Process Consultation,Streamline Corp,82000,Prospecting,2026-03-24,10
+Streamline Corp - Process Analysis,Streamline Corp,176000,Qualification,2026-04-17,25
+Streamline Corp - Process Proposal,Streamline Corp,298000,Proposal/Price Quote,2026-05-25,50
+Streamline Corp - Process Approval,Streamline Corp,348000,Negotiation/Review,2026-06-10,75
+Streamline Corp - Process Optimization,Streamline Corp,428000,Closed Won,2026-02-28,100
+Vision Quest - Vision Planning,Vision Quest,60000,Prospecting,2026-03-18,10
+Vision Quest - Vision Assessment,Vision Quest,128000,Qualification,2026-04-13,25
+Vision Quest - Vision Proposal,Vision Quest,218000,Proposal/Price Quote,2026-05-20,50
+Vision Quest - Vision Negotiation,Vision Quest,262000,Negotiation/Review,2026-06-02,75
+Vision Quest - Vision Strategy,Vision Quest,324000,Closed Won,2026-02-21,100
+Strategic Tech - Strategic Audit,Strategic Tech,76000,Prospecting,2026-03-22,10
+Strategic Tech - Strategic Analysis,Strategic Tech,164000,Qualification,2026-04-18,25
+Strategic Tech - Strategic Proposal,Strategic Tech,278000,Proposal/Price Quote,2026-05-26,50
+Strategic Tech - Strategic Terms,Strategic Tech,322000,Negotiation/Review,2026-06-08,75
+Strategic Tech - Strategic Alliance,Strategic Tech,396000,Closed Won,2026-02-27,100
+Executive Partners - Executive Consultation,Executive Partners,80000,Prospecting,2026-03-25,10
+Executive Partners - Executive Assessment,Executive Partners,172000,Qualification,2026-04-21,25
+Executive Partners - Executive Proposal,Executive Partners,292000,Proposal/Price Quote,2026-05-29,50
+Executive Partners - Executive Approval,Executive Partners,338000,Negotiation/Review,2026-06-13,75
+Executive Partners - Executive Services,Executive Partners,416000,Closed Won,2026-03-02,100
+Global Innovations - Innovation Workshop,Global Innovations,92000,Prospecting,2026-03-29,10
+Global Innovations - Innovation Assessment,Global Innovations,198000,Qualification,2026-04-22,25
+Global Innovations - Innovation Proposal,Global Innovations,338000,Proposal/Price Quote,2026-06-01,50
+Global Innovations - Innovation Discussion,Global Innovations,388000,Negotiation/Review,2026-06-14,75
+Global Innovations - Innovation Partnership,Global Innovations,478000,Closed Won,2026-03-03,100
+
