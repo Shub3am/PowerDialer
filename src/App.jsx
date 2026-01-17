@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import './index.css'
 import { getSalesforceBaseURL, extractFromPage } from './services/baseService';
 
-const OBJECTS = ['Leads', 'Contacts', 'Accounts', 'Opportunities', 'Tasks']
+const OBJECTS = ['Leads', 'Contacts', 'Accounts', 'Opportunities', 'Tasks', 'Related']
 
 function App() {
     const [activeTab, setActiveTab] = useState('Opportunities')
@@ -17,8 +17,33 @@ function App() {
 
     const STORAGE_KEY = 'salesforce_data'
 
+    // Memoized related data (items found in multiple categories)
+    const relatedData = useMemo(() => {
+        const matchMap = new Map();
+
+        // Loop through all standard categories
+        ['Leads', 'Contacts', 'Accounts', 'Opportunities', 'Tasks'].forEach(type => {
+            const records = recordsByType[type] || [];
+            records.forEach(record => {
+                const key = record.Id || record.name;
+                if (!key) return;
+
+                if (!matchMap.has(key)) {
+                    matchMap.set(key, { ...record, foundIn: [type] });
+                } else {
+                    const existing = matchMap.get(key);
+                    if (!existing.foundIn.includes(type)) {
+                        existing.foundIn.push(type);
+                    }
+                }
+            });
+        });
+
+        return Array.from(matchMap.values()).filter(item => item.foundIn.length > 1);
+    }, [recordsByType]);
+
     // Get current data based on active tab
-    const currentData = recordsByType[activeTab] || [];
+    const currentData = activeTab === 'Related' ? relatedData : (recordsByType[activeTab] || []);
 
     // Dynamic columns based on extracted data (id hidden; name first)
     const columns = useMemo(() => {
@@ -39,8 +64,13 @@ function App() {
             keys.unshift('name');
         }
 
+        // Add 'foundIn' to the end for Related tab
+        if (activeTab === 'Related') {
+            keys.push('foundIn');
+        }
+
         return keys;
-    }, [currentData]);
+    }, [currentData, activeTab]);
 
     const getStorage = () => {
         if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
@@ -317,19 +347,24 @@ function App() {
                 </div>
             </header>
 
-            {/* Tabs */}
+            {/* Tabs - Now Scrollable */}
             <div className="bg-white border-b border-gray-200">
-                <div className="flex">
+                <div className="flex overflow-x-auto whitespace-nowrap scrollbar-hide no-scrollbar">
                     {OBJECTS.map(obj => (
                         <button
                             key={obj}
                             onClick={() => setActiveTab(obj)}
-                            className={`px-6 py-3 font-medium transition ${activeTab === obj
+                            className={`px-5 py-3 font-medium transition flex-shrink-0 flex items-center gap-2 ${activeTab === obj
                                 ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
                                 : 'text-gray-600 hover:text-gray-900'
                                 }`}
                         >
                             {obj}
+                            {obj === 'Related' && relatedData.length > 0 && (
+                                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] text-white animate-pulse">
+                                    {relatedData.length}
+                                </span>
+                            )}
                         </button>
                     ))}
                 </div>
@@ -450,10 +485,20 @@ function App() {
                                 </thead>
                                 <tbody>
                                     {currentData.map((record, index) => (
-                                        <tr key={record.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                        <tr key={record.Id || record.id || index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50 hover:bg-blue-50/30 transition shadow-sm'}>
                                             {columns.map(col => (
-                                                <td key={col} className={`px-4 py-2 border-b ${col === 'name' ? 'font-medium' : ''}`}>
-                                                    {record[col] || '-'}
+                                                <td key={col} className={`px-4 py-2 border-b ${col === 'name' ? 'font-medium text-blue-900' : ''}`}>
+                                                    {col === 'foundIn' ? (
+                                                        <div className="flex gap-1 flex-wrap">
+                                                            {record[col].map(type => (
+                                                                <span key={type} className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[10px] uppercase font-bold tracking-wider">
+                                                                    {type}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        record[col] || '-'
+                                                    )}
                                                 </td>
                                             ))}
                                         </tr>
