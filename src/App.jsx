@@ -13,6 +13,7 @@ function App() {
     const [error, setError] = useState(null)
     const [extractionStatus, setExtractionStatus] = useState({})
     const [autoSave, setAutoSave] = useState(true)
+    const [showExportDropdown, setShowExportDropdown] = useState(false)
 
     const STORAGE_KEY = 'salesforce_data'
 
@@ -250,6 +251,24 @@ function App() {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+        setShowExportDropdown(false);
+    };
+
+    // Handler: Export to JSON (Entire Object)
+    const handleExportJSON = () => {
+        if (Object.keys(recordsByType).length === 0) return;
+
+        const data = JSON.stringify(recordsByType, null, 2);
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `salesforce-all-data-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        setShowExportDropdown(false);
     };
 
     // Handler: Clear all data
@@ -323,13 +342,41 @@ function App() {
                     <div><span className="text-gray-600">Updated: </span><span className="font-bold">{lastUpdated || 'Never'}</span></div>
                 </div>
                 <div className="flex gap-3 items-center">
-                    <button
-                        onClick={handleExportCSV}
-                        disabled={currentData.length === 0}
-                        className="px-4 py-1.5 text-sm border border-blue-600 text-blue-600 rounded hover:bg-blue-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        Export CSV
-                    </button>
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowExportDropdown(!showExportDropdown)}
+                            disabled={!Object.values(recordsByType).some(arr => arr && arr.length > 0)}
+                            className="px-4 py-1.5 text-sm border border-blue-600 text-blue-600 rounded hover:bg-blue-50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                            Export
+                            <svg className={`w-4 h-4 transition-transform ${showExportDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+
+                        {showExportDropdown && (
+                            <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-xl z-50 py-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <button
+                                    onClick={handleExportCSV}
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition flex items-center gap-2"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    Export current (CSV)
+                                </button>
+                                <button
+                                    onClick={handleExportJSON}
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition flex items-center gap-2"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                                    </svg>
+                                    Export all (JSON)
+                                </button>
+                            </div>
+                        )}
+                    </div>
                     <button
                         onClick={handleClearAll}
                         disabled={currentData.length === 0}
