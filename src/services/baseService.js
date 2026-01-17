@@ -64,11 +64,25 @@ async function extractSalesforceRecordsInPage(options = {}) {
 
     console.log("🚀 Salesforce Scraper Started via Extension");
 
-    const table = document.querySelector(tableSelector);
+    // Wait for the table to load (retry for up to 10s)
+    const waitForElement = async (selector, timeout = 10000) => {
+        const start = Date.now();
+        while (Date.now() - start < timeout) {
+            const el = document.querySelector(selector);
+            if (el) return el;
+            await new Promise(r => setTimeout(r, 500));
+        }
+        return null;
+    };
+
+    console.log(`⏳ Waiting for table selector: ${tableSelector}`);
+    const table = await waitForElement(tableSelector);
+
     if (!table) {
-        console.warn("Table not found with selector:", tableSelector);
+        console.warn("Table not found after waiting. Selector:", tableSelector);
         return { finalRecord: null, records: [] };
     }
+    console.log("✅ Table found, starting extraction...");
 
     const scrollContainer = (() => {
         const direct = document.querySelector(scrollContainerSelector);

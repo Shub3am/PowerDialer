@@ -41,88 +41,50 @@ function App() {
         return keys;
     }, [currentData]);
 
-    const mapForStorage = (objectType, records) => {
-        const safe = records || [];
-        switch (objectType) {
-            case 'Leads':
-                return safe.map(r => ({
-                    id: r.id,
-                    name: r.name,
-                    company: r.field1 || r.company || '',
-                    email: r.field2 || r.email || '',
-                    status: r.field3 || r.status || '',
-                    owner: r.field4 || r.owner || ''
-                }));
-            case 'Contacts':
-                return safe.map(r => ({
-                    id: r.id,
-                    name: r.name,
-                    email: r.field1 || r.email || '',
-                    phone: r.field2 || r.phone || '',
-                    account: r.field3 || r.account || '',
-                    owner: r.field4 || r.owner || ''
-                }));
-            case 'Accounts':
-                return safe.map(r => ({
-                    id: r.id,
-                    name: r.name,
-                    industry: r.field1 || r.industry || '',
-                    revenue: r.field2 || r.revenue || '',
-                    owner: r.field3 || r.owner || ''
-                }));
-            case 'Opportunities':
-                return safe.map(r => ({
-                    id: r.id,
-                    name: r.name,
-                    amount: r.field1 || r.amount || '',
-                    stage: r.field2 || r.stage || '',
-                    probability: r.field3 || r.probability || '',
-                    closeDate: r.field4 || r.closeDate || '',
-                    account: r.field5 || r.account || ''
-                }));
-            case 'Tasks':
-                return safe.map(r => ({
-                    id: r.id,
-                    subject: r.name || r.subject || '',
-                    due: r.field1 || r.due || '',
-                    status: r.field2 || r.status || '',
-                    relatedTo: r.field3 || r.relatedTo || '',
-                    assignee: r.field4 || r.assignee || ''
-                }));
-            default:
-                return safe;
+    const getStorage = () => {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            return chrome.storage.local;
         }
+        // Fallback or Dev mode: use localStorage ( getting error on extension storage)
+        console.warn('Using localStorage (Dev Mode)');
+        return {
+            get: async (key) => {
+                // chrome.storage.local.get accepts string, array, or object. We handle string/array of 1.
+                const k = typeof key === 'object' && !Array.isArray(key) ? Object.keys(key)[0] :
+                    Array.isArray(key) ? key[0] : key;
+                const val = localStorage.getItem(k);
+                return val ? { [k]: JSON.parse(val) } : {};
+            },
+            set: async (items) => {
+                Object.entries(items).forEach(([k, v]) => localStorage.setItem(k, JSON.stringify(v)));
+            }
+        };
     };
 
     const persistToStorage = async (dataByType) => {
         try {
-            const storage = chrome?.storage?.sync || chrome?.storage?.local;
-            if (!storage) {
-                console.warn('Extension storage not available; skipping persist');
-                return;
-            }
+            const storage = getStorage();
+            // Save AS IS (no mapping) to preserve all scraped fields
             const payload = {
-                leads: mapForStorage('Leads', dataByType['Leads']),
-                contacts: mapForStorage('Contacts', dataByType['Contacts']),
-                accounts: mapForStorage('Accounts', dataByType['Accounts']),
-                opportunities: mapForStorage('Opportunities', dataByType['Opportunities']),
-                tasks: mapForStorage('Tasks', dataByType['Tasks']),
+                leads: dataByType['Leads'] || [],
+                contacts: dataByType['Contacts'] || [],
+                accounts: dataByType['Accounts'] || [],
+                opportunities: dataByType['Opportunities'] || [],
+                tasks: dataByType['Tasks'] || [],
                 lastSync: Date.now()
             };
             await storage.set({ [STORAGE_KEY]: payload });
+            console.log('✅ Data saved to storage');
         } catch (e) {
             console.error('Failed to persist data to extension storage', e);
+            setError('Failed to save data: ' + e.message);
         }
     };
 
     useEffect(() => {
         const loadFromStorage = async () => {
             try {
-                const storage = chrome?.storage?.sync || chrome?.storage?.local;
-                if (!storage) {
-                    console.warn('Extension storage not available; skipping load');
-                    return;
-                }
+                const storage = getStorage();
                 const stored = await storage.get(STORAGE_KEY);
                 const payload = stored?.[STORAGE_KEY]?.salesforce_data || stored?.[STORAGE_KEY];
                 if (!payload) return;
@@ -138,8 +100,9 @@ function App() {
                 if (payload.lastSync) {
                     setLastUpdated(new Date(payload.lastSync).toLocaleTimeString());
                 }
+                console.log('✅ Data loaded from storage');
             } catch (e) {
-                console.error('Failed to load saved data from chrome.storage.local', e);
+                console.error('Failed to load saved data:', e);
             }
         };
 
@@ -200,7 +163,7 @@ function App() {
                         chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
                             if (tabId === tab.id && info.status === 'complete') {
                                 chrome.tabs.onUpdated.removeListener(listener);
-                                setTimeout(resolve, 2000);
+                                setTimeout(resolve, 4000);
                             }
                         });
                     });
