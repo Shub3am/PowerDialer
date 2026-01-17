@@ -5,7 +5,7 @@
  */
 export async function getSalesforceBaseURL() {
     // Query for tabs that look like Salesforce Lightning
-    const tabs = await chrome.tabs.query({ url: "*://*.lightning.force.com/*" });
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true, url: "*://*.lightning.force.com/*" });
 
     if (tabs.length > 0) {
         const url = new URL(tabs[0].url);
@@ -19,7 +19,7 @@ export async function getSalesforceBaseURL() {
         return url.origin;
     }
 
-    throw new Error("Could not find an open Salesforce tab to determine the base URL. Please login to Salesforce in another tab.");
+    throw new Error("Please Open A Salesforce Page For This Extracting Data");
 }
 
 /**

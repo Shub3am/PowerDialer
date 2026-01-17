@@ -11,5 +11,9 @@
     "scripting",
     "tabs",
     "storage"
+  ],
+  "host_permissions": [
+    "*://*.salesforce.com/*",
+    "*://*.lightning.force.com/*"
   ]
 }
